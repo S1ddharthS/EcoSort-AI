@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+
+{% block title %}Your history — EcoSort AI{% endblock %}
+{% block description %}See your past waste classifications, filter them by category, or delete entries.{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+  <div class="container page-intro-inner">
+    <div>
+      <p class="eyebrow">{{ icon("history") }} Saved locally</p>
+      <h1>Your classification history</h1>
+      <p class="page-lead">Every result is kept here so you can check a bin choice again later.</p>
+    </div>
+    <div class="page-intro-badge" aria-live="polite">
+      <span id="history-total">0</span>
+      <span>items</span>
+    </div>
+  </div>
+</section>
+
+<div class="container history-container">
+  <div class="history-toolbar">
+    <div class="filter-group" role="group" aria-label="Filter history by category">
+      <button class="filter-pill is-active" type="button" data-category="" aria-pressed="true">All</button>
+      {% for cat in categories %}
+      <button class="filter-pill" type="button" data-category="{{ cat.category }}" aria-pressed="false">{{ cat.display_name }}</button>
+      {% endfor %}
+    </div>
+    <button class="btn btn-ghost btn-danger-text" id="clear-history" type="button" disabled>
+      {{ icon("trash") }} Clear all
+    </button>
+  </div>
+
+  <p class="history-status" id="history-status" aria-live="polite">Newest first</p>
+
+  <div class="alert alert-error" id="history-error" role="alert" hidden>
+    {{ icon("alert") }}
+    <div class="alert-body">
+      <h2>We couldn't load your history</h2>
+      <p id="history-error-message">Please check the server and try again.</p>
+      <button class="btn btn-secondary btn-sm" id="history-retry" type="button">{{ icon("refresh") }} Try again</button>
+    </div>
+  </div>
+
+  <div class="history-grid" id="history-grid" aria-live="polite" aria-busy="true">
+    {% for _ in range(6) %}
+    <div class="history-card skeleton-card" aria-hidden="true">
+      <div class="skeleton skeleton-image"></div>
+      <div class="skeleton-body">
+        <div class="skeleton skeleton-line skeleton-line-lg"></div>
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line skeleton-line-sm"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="empty-state" id="history-empty" hidden>
+    <span class="empty-icon">{{ icon("history") }}</span>
+    <h2 id="history-empty-title">No classifications yet</h2>
+    <p id="history-empty-text">Take your first photo and it will appear here automatically.</p>
+    <a class="btn btn-primary" id="history-empty-action" href="{{ url_for('main.classify_page') }}">{{ icon("scan") }} Classify your first item</a>
+    <button class="text-link" id="show-all-button" type="button" hidden>Show all categories</button>
+  </div>
+
+  <p class="history-footnote">{{ icon("info") }} History is stored in this app's local SQLite database. Clearing it also deletes the saved preview images.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/history.js') }}?v=1" defer></script>
+{% endblock %}
