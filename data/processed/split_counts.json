@@ -1,0 +1,75 @@
+{
+  "seed": 42,
+  "total_images": 3372,
+  "splits": {
+    "train": {
+      "plastic": 336,
+      "paper": 415,
+      "cardboard": 281,
+      "glass": 350,
+      "metal": 285,
+      "organic": 689
+    },
+    "val": {
+      "plastic": 72,
+      "paper": 89,
+      "cardboard": 61,
+      "glass": 75,
+      "metal": 62,
+      "organic": 148
+    },
+    "test": {
+      "plastic": 72,
+      "paper": 90,
+      "cardboard": 61,
+      "glass": 76,
+      "metal": 62,
+      "organic": 148
+    }
+  },
+  "split_totals": {
+    "train": 2356,
+    "val": 507,
+    "test": 509
+  },
+  "class_totals": {
+    "plastic": 480,
+    "paper": 594,
+    "cardboard": 403,
+    "glass": 501,
+    "metal": 409,
+    "organic": 985
+  },
+  "sources": {
+    "TrashNet": "Gary Thung & Mindy Yang (MIT licence); 'trash' class excluded",
+    "Organic": "12-class Garbage Classification dataset, 'biological' subset"
+  },
+  "bad_files_removed": 0,
+  "duplicates_removed": 3,
+  "per_source": {
+    "TrashNet/cardboard": {
+      "found": 403,
+      "kept": 403
+    },
+    "TrashNet/glass": {
+      "found": 501,
+      "kept": 501
+    },
+    "TrashNet/metal": {
+      "found": 410,
+      "kept": 409
+    },
+    "TrashNet/paper": {
+      "found": 594,
+      "kept": 594
+    },
+    "TrashNet/plastic": {
+      "found": 482,
+      "kept": 480
+    },
+    "Organic/biological": {
+      "found": 985,
+      "kept": 985
+    }
+  }
+}
