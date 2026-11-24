@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+.python-version
+
+# Local runtime state
+database/*.db
+database/*.db-wal
+database/*.db-shm
+logs/
+static/uploads/*
+!static/uploads/.gitkeep
+server.out.log
+server.err.log
+train.out.log
+train.err.log
+.train.pid
+
+# Large datasets and downloaded archives (recreate with ml/prepare_data.py)
+data/raw/
+data/processed/train/
+data/processed/val/
+data/processed/test/
+data/test_real_world/
+
+# Model checkpoints are large. Keep the evaluated production files out of git
+# unless the team uses Git LFS.
+ml/model/_*.keras
+ml/model/baseline_cnn.keras
+ml/model_smoke/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
