@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, cat_icon, recyclable_tone %}
+
+{% block title %}Recycling guides — EcoSort AI{% endblock %}
+{% block description %}Simple guides for plastic, paper, cardboard, glass, metal and organic waste: what belongs, what doesn't, how to prepare it and which bin to use.{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+  <div class="container page-intro-inner">
+    <div>
+      <p class="eyebrow">{{ icon("book") }} Recycling guides</p>
+      <h1>Learn what goes where</h1>
+      <p class="page-lead">Short, practical guides for all six categories. Start with the item in your hand.</p>
+    </div>
+    <div class="page-intro-note">
+      {{ icon("map-pin") }}
+      <p>Bin colours and accepted items differ by city. These are general rules.</p>
+    </div>
+  </div>
+</section>
+
+<div class="container learn-container">
+  <div class="learn-toolbar">
+    <label class="search-field" for="guide-search">
+      {{ icon("search") }}
+      <span class="visually-hidden">Search recycling guides</span>
+      <input id="guide-search" type="search" placeholder="Search an item, e.g. pizza box or glass" autocomplete="off">
+    </label>
+    <p class="search-count" id="search-count" aria-live="polite">Showing all 6 guides</p>
+  </div>
+
+  <div class="alert alert-info learn-disclaimer">
+    {{ icon("info") }}
+    <p><strong>Check before you bin.</strong> We use general guidance and mark rules that often vary as “Depends on your area”. Your local council's website is the final word.</p>
+  </div>
+
+  <div class="learn-list" id="learn-list">
+    {% for cat in categories %}
+    <details class="learn-card" id="category-{{ cat.category }}" {% if loop.first %}open{% endif %} data-category="{{ cat.category }}">
+      <summary class="learn-summary">
+        <span class="cat-icon cat-{{ cat.category }}">{{ cat_icon(cat.category) }}</span>
+        <span class="learn-title">
+          <span class="learn-name">{{ cat.display_name }}</span>
+          <span class="learn-sub">What belongs · How to prepare · Which bin</span>
+        </span>
+        <span class="badge badge-{{ recyclable_tone(cat.recyclable) }} learn-badge">Recyclable: {{ cat.recyclable }}</span>
+        <span class="learn-chevron">{{ icon("chevron") }}</span>
+      </summary>
+      <div class="learn-content">
+        <div class="learn-meta-grid">
+          <div class="learn-meta">
+            <span class="learn-meta-icon">{{ icon("map-pin") }}</span>
+            <div><span class="learn-meta-label">Typical bin</span><strong>{{ cat.bin_colour }}</strong></div>
+          </div>
+          <div class="learn-meta">
+            <span class="learn-meta-icon">{{ icon("recycle") }}</span>
+            <div><span class="learn-meta-label">Recyclable</span><strong>{{ cat.recyclable }}</strong></div>
+          </div>
+        </div>
+
+        <div class="learn-columns">
+          <div class="learn-block">
+            <h3>{{ icon("check-circle") }} What belongs here</h3>
+            <ul class="check-list">
+              {% for item in cat.do_list %}<li>{{ icon("check") }}<span>{{ item }}</span></li>{% endfor %}
+            </ul>
+          </div>
+          <div class="learn-block">
+            <h3>{{ icon("x") }} Keep it out</h3>
+            <ul class="cross-list">
+              {% for item in cat.dont_list %}<li>{{ icon("x") }}<span>{{ item }}</span></li>{% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <div class="learn-block prep-block">
+          <h3>{{ icon("sparkles") }} How to prepare it</h3>
+          <ol class="prep-steps">
+            {% for step in cat.how_to_prepare %}<li><span class="prep-number">{{ loop.index }}</span><span>{{ step }}</span></li>{% endfor %}
+          </ol>
+        </div>
+
+        <div class="fact-block">
+          {{ icon("leaf") }}
+          <p><strong>Good to know:</strong> {{ cat.fun_fact }}</p>
+        </div>
+        <p class="impact-note">{{ cat.environmental_impact }}</p>
+        <p class="local-note">{{ icon("map-pin") }} Bin colours are a guide only. Check your local council for the exact rules in your area.</p>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+
+  <div class="empty-state" id="learn-empty" hidden>
+    <span class="empty-icon">{{ icon("search") }}</span>
+    <h2>No matching guide</h2>
+    <p>Try a simpler word like “bottle”, “paper” or “food”. Or clear the search to see all six guides.</p>
+    <button class="btn btn-secondary" id="clear-guide-search" type="button">{{ icon("refresh") }} Clear search</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/learn.js') }}?v=1" defer></script>
+{% endblock %}
