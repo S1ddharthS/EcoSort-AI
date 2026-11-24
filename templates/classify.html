@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+
+{% block title %}Classify waste — EcoSort AI{% endblock %}
+{% block description %}Add a photo or use your camera to identify plastic, paper, cardboard, glass, metal or organic waste and get recycling advice.{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+  <div class="container page-intro-inner">
+    <div>
+      <p class="eyebrow">{{ icon("scan") }} AI waste classifier</p>
+      <h1>What are you throwing away?</h1>
+      <p class="page-lead">Add one clear photo. We'll name the waste type and show you how to handle it in seconds.</p>
+    </div>
+    <div class="page-intro-note">
+      {{ icon("lock") }}
+      <p>Photos are used for this result and saved only in your local History.</p>
+    </div>
+  </div>
+</section>
+
+<div class="container classify-container">
+  <noscript>
+    <div class="alert alert-warning" role="alert">{{ icon("alert") }}<div><strong>JavaScript is switched off.</strong> Upload, camera and results need JavaScript. Please enable it in your browser.</div></div>
+  </noscript>
+
+  <div class="classify-layout">
+    <div class="classify-main">
+      <section class="workspace-card" aria-labelledby="source-title">
+        <h2 class="visually-hidden" id="source-title">Choose how to add a photo</h2>
+        <div class="source-tabs" role="tablist" aria-label="Photo source">
+          <button class="source-tab is-active" id="tab-upload" type="button" role="tab" aria-selected="true" aria-controls="panel-upload">
+            <span class="source-tab-icon">{{ icon("upload") }}</span>
+            <span><strong>Upload photo</strong><small>Choose a file</small></span>
+          </button>
+          <button class="source-tab" id="tab-camera" type="button" role="tab" aria-selected="false" aria-controls="panel-camera" tabindex="-1">
+            <span class="source-tab-icon">{{ icon("camera") }}</span>
+            <span><strong>Use camera</strong><small>Take a photo now</small></span>
+          </button>
+        </div>
+
+        <div class="source-panel" id="panel-upload" role="tabpanel" aria-labelledby="tab-upload">
+          <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Add a photo: click to browse or drag and drop">
+            <div class="dropzone-icon">{{ icon("image") }}</div>
+            <p class="dropzone-title">Drag a photo here or <span class="link-look">browse your files</span></p>
+            <p class="dropzone-hint">JPG, PNG or WEBP · up to 5 MB</p>
+            <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" hidden>
+          </div>
+          <p class="field-error" id="upload-error" role="alert" hidden></p>
+        </div>
+
+        <div class="source-panel" id="panel-camera" role="tabpanel" aria-labelledby="tab-camera" hidden>
+          <div class="camera-area" id="camera-start">
+            <span class="camera-placeholder">{{ icon("camera") }}</span>
+            <h3>Use your camera</h3>
+            <p>We'll ask for permission. Your video is not recorded and never leaves this device.</p>
+            <button class="btn btn-secondary" id="start-camera" type="button">{{ icon("camera") }} Turn on camera</button>
+            <p class="camera-hint" id="camera-hint">Works on phones, tablets and laptops with a camera.</p>
+          </div>
+          <div class="camera-stage" id="camera-live" hidden>
+            <div class="video-wrap">
+              <video id="camera-video" playsinline autoplay muted aria-label="Live camera preview"></video>
+              <span class="camera-live-badge"><span class="status-dot"></span> Live</span>
+              <span class="focus-frame" aria-hidden="true"></span>
+            </div>
+            <div class="camera-controls">
+              <button class="btn btn-primary" id="capture-btn" type="button">{{ icon("camera") }} Capture photo</button>
+            </div>
+          </div>
+          <div class="camera-stage" id="camera-review" hidden>
+            <img id="captured-image" class="camera-captured" alt="Your captured camera photo">
+            <div class="camera-controls camera-controls-split">
+              <button class="btn btn-ghost" id="retake-btn" type="button">{{ icon("refresh") }} Retake</button>
+              <button class="btn btn-primary" id="use-capture-btn" type="button">{{ icon("check") }} Use this photo</button>
+            </div>
+          </div>
+          <div class="camera-permission" id="camera-permission" role="alert" hidden>
+            <span class="camera-permission-icon">{{ icon("alert") }}</span>
+            <div>
+              <h3 id="camera-error-title">Camera unavailable</h3>
+              <p id="camera-error-text"></p>
+              <button class="text-link" id="camera-fallback" type="button">Upload a photo instead {{ icon("arrow-right") }}</button>
+            </div>
+          </div>
+          <div class="camera-selected" id="camera-selected" hidden>
+            {{ icon("check-circle") }}<span>Camera photo selected. Use the button below to classify it, or retake it.</span>
+            <button class="text-link" id="retake-selected" type="button">Retake</button>
+          </div>
+        </div>
+
+        <div class="selected-preview" id="selected-preview" hidden>
+          <img id="preview-image" alt="Photo selected for classification">
+          <div class="preview-details">
+            <p class="eyebrow">{{ icon("check-circle") }} Ready to classify</p>
+            <p class="preview-name" id="preview-name">Selected photo</p>
+            <button class="text-link text-link-danger" id="remove-image" type="button">{{ icon("x") }} Remove image</button>
+          </div>
+        </div>
+
+        <div class="classify-actions">
+          <button class="btn btn-primary btn-lg" id="classify-btn" type="button" disabled>
+            {{ icon("scan") }} <span>Classify item</span>
+          </button>
+          <p class="classify-help" id="classification-help">Add a photo to start.</p>
+        </div>
+      </section>
+
+      <div class="analysis-card" id="analysis-state" hidden aria-live="polite" aria-busy="true">
+        <div class="analysis-spinner" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div>
+          <h2>Analysing your image...</h2>
+          <p>Checking the shape, texture and colours against six waste types.</p>
+        </div>
+        <div class="analysis-skeleton" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="alert alert-error" id="classify-error" role="alert" hidden>
+        {{ icon("alert") }}
+        <div class="alert-body">
+          <h2 id="classify-error-title">That didn't work</h2>
+          <p id="classify-error-message"></p>
+          <p class="alert-hint" id="classify-error-hint" hidden></p>
+          <button class="btn btn-secondary btn-sm" id="retry-classify" type="button">{{ icon("refresh") }} Try again</button>
+        </div>
+      </div>
+
+      <section class="result-section" id="result-section" hidden aria-live="polite" tabindex="-1"></section>
+    </div>
+
+    <aside class="classify-side" aria-labelledby="tips-title">
+      <div class="tip-card">
+        <p class="eyebrow">{{ icon("sparkles") }} Better photos, better results</p>
+        <h2 id="tips-title">For the clearest result</h2>
+        <ul class="tip-list">
+          {% for tip in tips %}
+          <li>{{ icon("check") }} <span>{{ tip }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="scope-card">
+        <div class="scope-icon">{{ icon("info") }}</div>
+        <h2>What EcoSort knows</h2>
+        <p>It recognises <strong>one item</strong> from six categories: plastic, paper, cardboard, glass, metal and organic waste.</p>
+        <p>Mixed piles, hidden materials and unusual items may come back as “not sure”. That's intentional.</p>
+        <a class="text-link" href="{{ url_for('main.about_page') }}">Read the limitations {{ icon("arrow-right") }}</a>
+      </div>
+      <div class="privacy-note">
+        {{ icon("lock") }}
+        <p>The camera stops as soon as you capture or leave this tab. History stays in this app's local database.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/classify.js') }}?v=1" defer></script>
+{% endblock %}
