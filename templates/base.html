@@ -1,0 +1,130 @@
+{% from "_macros.html" import icon %}
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F5EF" id="theme-color-meta">
+  <meta name="description" content="{% block description %}EcoSort AI identifies six types of waste from a photo and shows simple recycling or disposal steps.{% endblock %}">
+  <title>{% block title %}EcoSort AI — Know what goes where{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/sora-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/inter-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=1">
+  <script src="{{ url_for('static', filename='js/theme-init.js') }}"></script>
+</head>
+<body data-model-ready="{{ 'true' if model_ready else 'false' }}">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="{{ url_for('main.home') }}" aria-label="EcoSort AI home">
+        <img src="{{ url_for('static', filename='img/logo.svg') }}" width="38" height="38" alt="">
+        <span class="brand-name">EcoSort <span class="brand-ai">AI</span></span>
+      </a>
+
+      <nav class="desktop-nav" aria-label="Main navigation">
+        <a class="nav-link{% if request.endpoint == 'main.home' %} is-active{% endif %}" href="{{ url_for('main.home') }}" {% if request.endpoint == 'main.home' %}aria-current="page"{% endif %}>{{ icon("home") }}<span>Home</span></a>
+        <a class="nav-link{% if request.endpoint == 'main.classify_page' %} is-active{% endif %}" href="{{ url_for('main.classify_page') }}" {% if request.endpoint == 'main.classify_page' %}aria-current="page"{% endif %}>{{ icon("scan") }}<span>Classify</span></a>
+        <a class="nav-link{% if request.endpoint == 'main.history_page' %} is-active{% endif %}" href="{{ url_for('main.history_page') }}" {% if request.endpoint == 'main.history_page' %}aria-current="page"{% endif %}>{{ icon("history") }}<span>History</span></a>
+        <a class="nav-link{% if request.endpoint == 'main.learn_page' %} is-active{% endif %}" href="{{ url_for('main.learn_page') }}" {% if request.endpoint == 'main.learn_page' %}aria-current="page"{% endif %}>{{ icon("book") }}<span>Learn</span></a>
+        <a class="nav-link{% if request.endpoint == 'main.about_page' %} is-active{% endif %}" href="{{ url_for('main.about_page') }}" {% if request.endpoint == 'main.about_page' %}aria-current="page"{% endif %}>{{ icon("info") }}<span>About</span></a>
+      </nav>
+
+      <button class="icon-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+        {{ icon("moon", "icon theme-icon theme-icon-moon") }}
+        {{ icon("sun", "icon theme-icon theme-icon-sun") }}
+      </button>
+    </div>
+
+    {% if not model_ready %}
+    <div class="system-banner system-banner-error" role="alert">
+      <div class="container banner-inner">
+        {{ icon("alert") }}
+        <p><strong>The AI model isn't installed.</strong> {{ model_error }} Add the file and restart the app. The rest of the site still works.</p>
+      </div>
+    </div>
+    {% elif demo_model %}
+    <div class="system-banner system-banner-warning" role="status">
+      <div class="container banner-inner">
+        {{ icon("alert") }}
+        <p><strong>Demo model.</strong> Predictions work, but this model has not been evaluated on the held-out test set yet. Run <code>python ml/evaluate.py</code> and restart to show verified results.</p>
+      </div>
+    </div>
+    {% endif %}
+  </header>
+
+  <main id="main-content" class="site-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="{{ url_for('main.home') }}" aria-label="EcoSort AI home">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" width="34" height="34" alt="">
+            <span class="brand-name">EcoSort <span class="brand-ai">AI</span></span>
+          </a>
+          <p>An intelligent waste classifier that turns one photo into clear recycling and disposal steps.</p>
+        </div>
+        <div class="footer-column">
+          <h2 class="footer-title">Explore</h2>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('main.classify_page') }}">Classify waste</a></li>
+            <li><a href="{{ url_for('main.history_page') }}">Your history</a></li>
+            <li><a href="{{ url_for('main.learn_page') }}">Recycling guides</a></li>
+            <li><a href="{{ url_for('main.about_page') }}">How the model works</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h2 class="footer-title">Built with</h2>
+          <div class="tech-chips" aria-label="Technology stack">
+            <span>Python</span><span>TensorFlow</span><span>OpenCV</span><span>Flask</span><span>SQLite</span>
+          </div>
+          <p class="footer-course">Emerging Technologies: A Primer<br><span>(22ETP58)</span></p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; {{ current_year }} EcoSort AI. College project.</p>
+        <p>General guidance only — recycling rules vary by area. Check your local council.</p>
+      </div>
+    </div>
+  </footer>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a class="mobile-link{% if request.endpoint == 'main.home' %} is-active{% endif %}" href="{{ url_for('main.home') }}" {% if request.endpoint == 'main.home' %}aria-current="page"{% endif %}>
+      {{ icon("home") }}<span>Home</span>
+    </a>
+    <a class="mobile-link{% if request.endpoint == 'main.classify_page' %} is-active{% endif %}" href="{{ url_for('main.classify_page') }}" {% if request.endpoint == 'main.classify_page' %}aria-current="page"{% endif %}>
+      <span class="mobile-link-scan">{{ icon("scan") }}</span><span>Classify</span>
+    </a>
+    <a class="mobile-link{% if request.endpoint == 'main.history_page' %} is-active{% endif %}" href="{{ url_for('main.history_page') }}" {% if request.endpoint == 'main.history_page' %}aria-current="page"{% endif %}>
+      {{ icon("history") }}<span>History</span>
+    </a>
+    <a class="mobile-link{% if request.endpoint == 'main.learn_page' %} is-active{% endif %}" href="{{ url_for('main.learn_page') }}" {% if request.endpoint == 'main.learn_page' %}aria-current="page"{% endif %}>
+      {{ icon("book") }}<span>Learn</span>
+    </a>
+    <a class="mobile-link{% if request.endpoint == 'main.about_page' %} is-active{% endif %}" href="{{ url_for('main.about_page') }}" {% if request.endpoint == 'main.about_page' %}aria-current="page"{% endif %}>
+      {{ icon("info") }}<span>About</span>
+    </a>
+  </nav>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+  <dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-icon" id="confirm-icon">{{ icon("alert") }}</div>
+      <h2 id="confirm-title">Are you sure?</h2>
+      <p id="confirm-message"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" value="cancel" type="submit">Cancel</button>
+        <button class="btn btn-danger" value="confirm" type="submit" id="confirm-accept">Delete</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}?v=1" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
