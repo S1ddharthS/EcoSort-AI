@@ -1,0 +1,361 @@
+{
+  "demo": false,
+  "evaluated_at": "2026-11-24T14:52:50+00:00",
+  "model": {
+    "name": "MobileNetV2 transfer learning (head + fine-tuned)",
+    "file": "ecosort_model.keras",
+    "input_size": [
+      224,
+      224
+    ],
+    "parameters": 2265670,
+    "classes": [
+      "plastic",
+      "paper",
+      "cardboard",
+      "glass",
+      "metal",
+      "organic"
+    ]
+  },
+  "dataset": {
+    "sources": {
+      "TrashNet": "Gary Thung & Mindy Yang (MIT licence); 'trash' class excluded",
+      "Organic": "12-class Garbage Classification dataset, 'biological' subset"
+    },
+    "total_images": 3372,
+    "split_totals": {
+      "train": 2356,
+      "val": 507,
+      "test": 509
+    },
+    "class_totals": {
+      "plastic": 480,
+      "paper": 594,
+      "cardboard": 403,
+      "glass": 501,
+      "metal": 409,
+      "organic": 985
+    },
+    "test_per_class": {
+      "plastic": 72,
+      "paper": 90,
+      "cardboard": 61,
+      "glass": 76,
+      "metal": 62,
+      "organic": 148
+    }
+  },
+  "test": {
+    "total": 509,
+    "accuracy": 0.9352,
+    "macro_precision": 0.9267,
+    "macro_recall": 0.9251,
+    "macro_f1": 0.9248,
+    "weighted_precision": 0.9368,
+    "weighted_recall": 0.9352,
+    "weighted_f1": 0.9351,
+    "per_class": {
+      "plastic": {
+        "precision": 0.9275,
+        "recall": 0.8889,
+        "f1": 0.9078,
+        "support": 72
+      },
+      "paper": {
+        "precision": 0.914,
+        "recall": 0.9444,
+        "f1": 0.929,
+        "support": 90
+      },
+      "cardboard": {
+        "precision": 0.963,
+        "recall": 0.8525,
+        "f1": 0.9043,
+        "support": 61
+      },
+      "glass": {
+        "precision": 0.8718,
+        "recall": 0.8947,
+        "f1": 0.8831,
+        "support": 76
+      },
+      "metal": {
+        "precision": 0.8841,
+        "recall": 0.9839,
+        "f1": 0.9313,
+        "support": 62
+      },
+      "organic": {
+        "precision": 1.0,
+        "recall": 0.9865,
+        "f1": 0.9932,
+        "support": 148
+      }
+    },
+    "confusion_matrix": [
+      [
+        64,
+        0,
+        0,
+        8,
+        0,
+        0
+      ],
+      [
+        1,
+        85,
+        2,
+        1,
+        1,
+        0
+      ],
+      [
+        0,
+        8,
+        52,
+        0,
+        1,
+        0
+      ],
+      [
+        4,
+        0,
+        0,
+        68,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        61,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        2,
+        146
+      ]
+    ],
+    "confusion_matrix_normalized": [
+      [
+        0.8889,
+        0.0,
+        0.0,
+        0.1111,
+        0.0,
+        0.0
+      ],
+      [
+        0.0111,
+        0.9444,
+        0.0222,
+        0.0111,
+        0.0111,
+        0.0
+      ],
+      [
+        0.0,
+        0.1311,
+        0.8525,
+        0.0,
+        0.0164,
+        0.0
+      ],
+      [
+        0.0526,
+        0.0,
+        0.0,
+        0.8947,
+        0.0526,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0161,
+        0.9839,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0135,
+        0.9865
+      ]
+    ]
+  },
+  "baseline": {
+    "total": 509,
+    "accuracy": 0.4656,
+    "macro_precision": 0.4252,
+    "macro_recall": 0.4824,
+    "macro_f1": 0.4259,
+    "weighted_precision": 0.4946,
+    "weighted_recall": 0.4656,
+    "weighted_f1": 0.4471,
+    "per_class": {
+      "plastic": {
+        "precision": 0.5146,
+        "recall": 0.7361,
+        "f1": 0.6057,
+        "support": 72
+      },
+      "paper": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 90
+      },
+      "cardboard": {
+        "precision": 0.4353,
+        "recall": 0.6066,
+        "f1": 0.5068,
+        "support": 61
+      },
+      "glass": {
+        "precision": 0.3636,
+        "recall": 0.4737,
+        "f1": 0.4114,
+        "support": 76
+      },
+      "metal": {
+        "precision": 0.2632,
+        "recall": 0.5645,
+        "f1": 0.359,
+        "support": 62
+      },
+      "organic": {
+        "precision": 0.9744,
+        "recall": 0.5135,
+        "f1": 0.6726,
+        "support": 148
+      }
+    },
+    "confusion_matrix": [
+      [
+        53,
+        0,
+        1,
+        13,
+        4,
+        1
+      ],
+      [
+        24,
+        0,
+        3,
+        18,
+        44,
+        1
+      ],
+      [
+        4,
+        0,
+        37,
+        9,
+        11,
+        0
+      ],
+      [
+        18,
+        0,
+        2,
+        36,
+        20,
+        0
+      ],
+      [
+        4,
+        0,
+        5,
+        18,
+        35,
+        0
+      ],
+      [
+        0,
+        11,
+        37,
+        5,
+        19,
+        76
+      ]
+    ],
+    "confusion_matrix_normalized": [
+      [
+        0.7361,
+        0.0,
+        0.0139,
+        0.1806,
+        0.0556,
+        0.0139
+      ],
+      [
+        0.2667,
+        0.0,
+        0.0333,
+        0.2,
+        0.4889,
+        0.0111
+      ],
+      [
+        0.0656,
+        0.0,
+        0.6066,
+        0.1475,
+        0.1803,
+        0.0
+      ],
+      [
+        0.2368,
+        0.0,
+        0.0263,
+        0.4737,
+        0.2632,
+        0.0
+      ],
+      [
+        0.0645,
+        0.0,
+        0.0806,
+        0.2903,
+        0.5645,
+        0.0
+      ],
+      [
+        0.0,
+        0.0743,
+        0.25,
+        0.0338,
+        0.1284,
+        0.5135
+      ]
+    ]
+  },
+  "training": {
+    "selected_phase": "fine-tune",
+    "validation_accuracy": 0.934911,
+    "baseline_validation_accuracy": 0.431953,
+    "head_epochs": 6,
+    "finetune_epochs": 6,
+    "training_seconds": 2360.5,
+    "class_weights": {
+      "0": 1.1686507936507937,
+      "1": 0.9461847389558233,
+      "2": 1.3973902728351126,
+      "3": 1.121904761904762,
+      "4": 1.3777777777777778,
+      "5": 0.5699080793420416
+    }
+  }
+}

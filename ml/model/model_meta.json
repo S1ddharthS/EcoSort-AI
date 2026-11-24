@@ -1,0 +1,28 @@
+{
+  "demo": false,
+  "metrics_available": true,
+  "model_name": "MobileNetV2 transfer learning",
+  "model_file": "ecosort_model.keras",
+  "baseline_file": "baseline_cnn.keras",
+  "input_size": [
+    224,
+    224
+  ],
+  "classes": [
+    "plastic",
+    "paper",
+    "cardboard",
+    "glass",
+    "metal",
+    "organic"
+  ],
+  "gradcam_layer": "mobilenet_features",
+  "trained_at": "2026-11-24T07:08:26+00:00",
+  "selected_phase": "fine-tune",
+  "validation_accuracy": 0.934911,
+  "note": "DEMO status is shown until evaluate.py has run on the held-out test set and written metrics.json.",
+  "test_accuracy": 0.9352,
+  "macro_f1": 0.9248,
+  "evaluated_at": "2026-11-24T14:52:50+00:00",
+  "evaluation_test_size": 509
+}
