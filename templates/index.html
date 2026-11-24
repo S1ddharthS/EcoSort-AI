@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, cat_icon, recyclable_tone %}
+
+{% block title %}EcoSort AI — Know what goes where{% endblock %}
+{% block description %}Upload one photo and EcoSort AI identifies plastic, paper, cardboard, glass, metal or organic waste, then shows how to recycle or dispose of it.{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">{{ icon("sparkles") }} Waste sorting, made simple</p>
+      <h1>Know what goes <span class="highlight">where.</span></h1>
+      <p class="hero-lead">Take one photo. EcoSort AI identifies the item and gives you clear recycling or disposal steps — no guesswork.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" href="{{ url_for('main.classify_page') }}">
+          {{ icon("scan") }} Classify waste now
+        </a>
+        <a class="text-link" href="#how-it-works">How it works {{ icon("arrow-right") }}</a>
+      </div>
+      <ul class="hero-points" aria-label="EcoSort at a glance">
+        <li>{{ icon("check-circle") }} Six waste types</li>
+        <li>{{ icon("check-circle") }} Camera or upload</li>
+        <li>{{ icon("check-circle") }} Saved on this device</li>
+      </ul>
+    </div>
+
+    <div class="hero-visual" aria-label="Example of an EcoSort result">
+      <div class="hero-blob" aria-hidden="true"></div>
+      <div class="sample-card">
+        <div class="sample-top">
+          <span class="sample-label">Sample preview</span>
+          <span class="sample-live"><span class="status-dot" aria-hidden="true"></span> AI ready</span>
+        </div>
+        <div class="sample-image-wrap">
+          <img src="{{ url_for('static', filename='img/example_plastic.jpg') }}" alt="Example photo of a clear plastic bottle" width="512" height="384">
+          <span class="scan-corner scan-corner-tl" aria-hidden="true"></span>
+          <span class="scan-corner scan-corner-tr" aria-hidden="true"></span>
+          <span class="scan-corner scan-corner-bl" aria-hidden="true"></span>
+          <span class="scan-corner scan-corner-br" aria-hidden="true"></span>
+          <span class="sample-category">{{ icon("bottle") }} Plastic</span>
+        </div>
+        <div class="sample-body">
+          <div class="sample-heading">
+            <div>
+              <p class="eyebrow">Example result</p>
+              <h2>Plastic bottle</h2>
+            </div>
+            <span class="badge badge-caution">Depends on your area</span>
+          </div>
+          <p class="sample-note">{{ icon("recycle") }} Empty and rinse, then check your local blue bin.</p>
+          <div class="sample-steps" aria-hidden="true">
+            <span class="sample-step is-done">{{ icon("check") }} Rinse</span>
+            <span class="sample-step">{{ icon("chevron") }} Check locally</span>
+          </div>
+        </div>
+      </div>
+      <div class="float-chip float-chip-one">{{ icon("leaf") }} <span>Better habits,<br>less waste</span></div>
+      <div class="float-chip float-chip-two">{{ icon("map-pin") }} <span>Local rules<br>included</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="stats-section" aria-labelledby="stats-title">
+  <div class="container">
+    <div class="stats-strip">
+      <div class="stats-intro">
+        <p class="eyebrow">{{ icon("history") }} Live activity</p>
+        <h2 id="stats-title">Your sorting, at a glance</h2>
+        <p>Numbers update automatically from the built-in history.</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-value">{{ stats.total }}</span>
+          <span class="stat-label">items classified</span>
+          {% if stats.total == 0 %}
+          <p class="stat-note">Nothing yet — your first photo starts the count.</p>
+          {% else %}
+          <p class="stat-note">{{ "1 item saved" if stats.total == 1 else stats.total ~ " items saved" }} in History.</p>
+          {% endif %}
+        </div>
+        <div class="stat">
+          {% if stats.most_common %}
+          <span class="stat-value stat-value-text">{{ stats.most_common.display_name }}</span>
+          <span class="stat-label">most common</span>
+          <p class="stat-note">Seen {{ stats.most_common.count }} {{ "time" if stats.most_common.count == 1 else "times" }} so far.</p>
+          {% else %}
+          <span class="stat-value stat-value-text stat-value-empty">—</span>
+          <span class="stat-label">most common</span>
+          <p class="stat-note">No favourite yet. Classify an item to see it here.</p>
+          {% endif %}
+        </div>
+        <div class="stat">
+          <span class="stat-value">6</span>
+          <span class="stat-label">waste categories</span>
+          <p class="stat-note">Plastic, paper, cardboard, glass, metal and organic.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section how-section" id="how-it-works" aria-labelledby="how-title">
+  <div class="container">
+    <div class="section-heading">
+      <p class="eyebrow">{{ icon("recycle") }} Three simple steps</p>
+      <h2 id="how-title">From photo to peace of mind</h2>
+      <p>No account, no jargon. Just a clear answer and what to do next.</p>
+    </div>
+    <ol class="steps-grid">
+      <li class="step-card">
+        <span class="step-number">1</span>
+        <div class="step-icon">{{ icon("image") }}</div>
+        <h3>Add a photo</h3>
+        <p>Upload a picture or use your camera. One item works best.</p>
+      </li>
+      <li class="step-card">
+        <span class="step-number">2</span>
+        <div class="step-icon">{{ icon("sparkles") }}</div>
+        <h3>AI identifies the waste</h3>
+        <p>The model checks it against six common waste categories.</p>
+      </li>
+      <li class="step-card">
+        <span class="step-number">3</span>
+        <div class="step-icon">{{ icon("book") }}</div>
+        <h3>Get recycling tips</h3>
+        <p>See the right bin, preparation steps and what to keep out.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="section categories-section" id="categories" aria-labelledby="categories-title">
+  <div class="container">
+    <div class="section-heading section-heading-split">
+      <div>
+        <p class="eyebrow">{{ icon("leaf") }} Six categories</p>
+        <h2 id="categories-title">Know your waste</h2>
+      </div>
+      <p class="section-side-note">Recycling rules vary by city. Open a guide to see what belongs, what doesn't and how to prepare it.</p>
+    </div>
+    <div class="category-grid">
+      {% for cat in categories %}
+      <a class="category-card" href="{{ url_for('main.learn_page') }}#category-{{ cat.category }}">
+        <span class="cat-icon cat-{{ cat.category }}">{{ cat_icon(cat.category) }}</span>
+        <span class="category-card-body">
+          <span class="category-card-title">{{ cat.display_name }}</span>
+          <span class="category-rule category-rule-{{ recyclable_tone(cat.recyclable) }}">Recyclable: {{ cat.recyclable }}</span>
+        </span>
+        <span class="category-arrow">{{ icon("arrow-right") }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    <p class="local-note">{{ icon("map-pin") }} Not sure about a specific item? <a href="{{ url_for('main.learn_page') }}">Read the full guides</a> and check your local council's rules.</p>
+  </div>
+</section>
+{% endblock %}
