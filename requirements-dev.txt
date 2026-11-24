@@ -1,0 +1,4 @@
+# Development, testing and browser-review dependencies.
+-r requirements.txt
+pytest==9.1.1
+playwright==1.65.2
