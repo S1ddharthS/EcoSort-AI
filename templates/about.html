@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, cat_icon %}
+
+{% block title %}About the project — EcoSort AI{% endblock %}
+{% block description %}How EcoSort AI works, the real measured test results, the dataset, and the honest limitations of a six-class waste classifier.{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+  <div class="container page-intro-inner">
+    <div>
+      <p class="eyebrow">{{ icon("info") }} About EcoSort AI</p>
+      <h1>Simple answers for a messy problem</h1>
+      <p class="page-lead">EcoSort AI is a college project that pairs a small computer-vision model with plain-language recycling guidance.</p>
+    </div>
+    <div class="page-intro-note">
+      {{ icon("shield") }}
+      <p>Only measured results are shown. Nothing on this page is estimated or made up.</p>
+    </div>
+  </div>
+</section>
+
+<div class="container about-container">
+  <section class="about-problem-grid" aria-labelledby="problem-title">
+    <article class="about-card">
+      <span class="about-card-icon">{{ icon("recycle") }}</span>
+      <h2 id="problem-title">The problem</h2>
+      <p>Recycling labels are inconsistent and local rules are hard to remember. One wrong item can contaminate a whole bin, while useful materials end up in landfill because people aren't sure what to do.</p>
+    </article>
+    <article class="about-card">
+      <span class="about-card-icon">{{ icon("sparkles") }}</span>
+      <h2>Our approach</h2>
+      <p>Take one photo. The model sorts it into one of six common categories. If it isn't confident, it says so instead of guessing. Confident results come with preparation steps, bin guidance and a Grad-CAM explanation.</p>
+    </article>
+  </section>
+
+  <section class="about-section" id="results" aria-labelledby="results-title">
+    <div class="section-heading section-heading-split">
+      <div>
+        <p class="eyebrow">{{ icon("shield") }} Held-out test results</p>
+        <h2 id="results-title">Real model results</h2>
+      </div>
+      {% if metrics %}
+      <p class="section-side-note">Measured on {{ metrics.test.total }} test images that were never used for training or validation. Evaluation date: {{ metrics.evaluated_at | format_date }}.</p>
+      {% endif %}
+    </div>
+
+    {% if metrics %}
+    <div class="metric-cards">
+      <div class="metric-card">
+        <span class="metric-value">{{ metrics.test.accuracy | percent }}</span>
+        <span class="metric-label">Accuracy</span>
+        <p>Correct predictions across all test images.</p>
+      </div>
+      <div class="metric-card">
+        <span class="metric-value">{{ metrics.test.macro_f1 | percent }}</span>
+        <span class="metric-label">Macro F1</span>
+        <p>Balances precision and recall across all six classes.</p>
+      </div>
+      <div class="metric-card">
+        <span class="metric-value">{{ metrics.test.macro_precision | percent }}</span>
+        <span class="metric-label">Macro precision</span>
+        <p>When the model names a class, how often it is right.</p>
+      </div>
+      <div class="metric-card">
+        <span class="metric-value">{{ metrics.test.macro_recall | percent }}</span>
+        <span class="metric-label">Macro recall</span>
+        <p>How often each class is found among its real examples.</p>
+      </div>
+    </div>
+
+    <div class="model-meta-line">
+      {{ icon("info") }}
+      <p><strong>{{ metrics.model.name }}</strong> · {{ "{:,}".format(metrics.model.parameters) }} parameters · input {{ metrics.model.input_size[0] }}×{{ metrics.model.input_size[1] }} px · six-class softmax.</p>
+    </div>
+
+    <div class="table-card">
+      <h3>Per-class performance</h3>
+      <table class="metrics-table">
+        <thead>
+          <tr><th scope="col">Category</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">F1 score</th><th scope="col">Test images</th></tr>
+        </thead>
+        <tbody>
+          {% for name, row in metrics.test.per_class.items() %}
+          <tr>
+            <th scope="row"><span class="table-cat">{{ cat_icon(name) }} {{ name | pretty_class }}</span></th>
+            <td data-label="Precision">{{ row.precision | percent }}</td>
+            <td data-label="Recall">{{ row.recall | percent }}</td>
+            <td data-label="F1 score">{{ row.f1 | percent }}</td>
+            <td data-label="Test images">{{ row.support }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="table-note">Precision = of the items predicted as this class, how many were correct. Recall = of all real items in this class, how many were found. F1 combines both.</p>
+    </div>
+
+    {% if metrics.baseline %}
+    <div class="table-card baseline-card">
+      <h3>Transfer learning vs. custom CNN baseline</h3>
+      <p class="table-intro">The custom CNN was trained from scratch on the same data. The MobileNetV2 transfer model is the one used by the app.</p>
+      <table class="metrics-table comparison-table">
+        <thead>
+          <tr><th scope="col">Model</th><th scope="col">Test accuracy</th><th scope="col">Macro F1</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">MobileNetV2 transfer learning</th>
+            <td data-label="Accuracy">{{ metrics.test.accuracy | percent }}</td>
+            <td data-label="Macro F1">{{ metrics.test.macro_f1 | percent }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Custom CNN baseline</th>
+            <td data-label="Accuracy">{{ metrics.baseline.accuracy | percent }}</td>
+            <td data-label="Macro F1">{{ metrics.baseline.macro_f1 | percent }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <div class="report-figures">
+      <figure class="figure-card">
+        {% if images.confusion_matrix %}
+        <img src="{{ url_for('static', filename='img/confusion_matrix.png') }}" alt="Confusion matrix showing how many test images were classified into each category" loading="lazy">
+        {% else %}
+        <div class="figure-missing">The confusion matrix image is not available.</div>
+        {% endif %}
+        <figcaption><strong>Confusion matrix.</strong> The diagonal shows correct predictions. Off-diagonal numbers show which categories got mixed up.</figcaption>
+      </figure>
+      <figure class="figure-card">
+        {% if images.training_curves %}
+        <img src="{{ url_for('static', filename='img/training_curves.png') }}" alt="Training and validation accuracy and loss curves across head training and fine-tuning" loading="lazy">
+        {% else %}
+        <div class="figure-missing">The training curves image is not available.</div>
+        {% endif %}
+        <figcaption><strong>Training curves.</strong> The dashed line marks the switch from head training to fine-tuning. Validation lines show performance on unseen images.</figcaption>
+      </figure>
+    </div>
+    {% else %}
+    <div class="empty-state about-empty">
+      <span class="empty-icon">{{ icon("info") }}</span>
+      <h2>Metrics are not available yet</h2>
+      <p>This project only shows measured numbers. Train the model and run the evaluation to fill this section:</p>
+      <code class="code-line">python ml/train.py</code>
+      <code class="code-line">python ml/evaluate.py</code>
+      <p>Until then, the app shows a “Demo model” banner.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="about-section" id="dataset" aria-labelledby="dataset-title">
+    <div class="section-heading">
+      <p class="eyebrow">{{ icon("image") }} Dataset</p>
+      <h2 id="dataset-title">What the model learned from</h2>
+    </div>
+    {% if metrics and metrics.dataset.class_totals %}
+    <div class="dataset-grid">
+      <div class="dataset-copy">
+        <p><strong>{{ metrics.dataset.total_images }}</strong> real images were used in total, split about 70% training, 15% validation and 15% test. Data was de-duplicated and checked for corrupt files before splitting.</p>
+        <p><strong>TrashNet</strong> supplies plastic, paper, cardboard, glass and metal. Its sixth “trash” class was deliberately dropped because EcoSort does not have a mixed-trash category.</p>
+        <p>Organic images come from the <strong>biological</strong> subset of a public 12-class garbage classification dataset. These are food/food-waste photos, so garden waste is less represented.</p>
+        <div class="source-links">
+          <a class="text-link" href="https://github.com/garythung/trashnet" target="_blank" rel="noopener noreferrer">TrashNet source {{ icon("arrow-right") }}</a>
+          <a class="text-link" href="https://huggingface.co/datasets/UdaraChamidu/Garbage-Classification-with-12-classes" target="_blank" rel="noopener noreferrer">Organic dataset source {{ icon("arrow-right") }}</a>
+        </div>
+      </div>
+      <div class="class-bars">
+        {% set max_count = metrics.dataset.class_totals.values() | max %}
+        {% for name, count in metrics.dataset.class_totals.items() %}
+        <div class="class-bar-row">
+          <span class="class-bar-label">{{ cat_icon(name) }} {{ name | pretty_class }}</span>
+          <div class="class-bar-track"><span class="class-bar-fill cat-bg-{{ name }}" style="width: {{ (count / max_count * 100) | round(1) }}%"></span></div>
+          <span class="class-bar-value">{{ count }}</span>
+        </div>
+        {% endfor %}
+        <p class="class-bars-note">The classes are imbalanced. Training used class weights so the smaller classes still count.</p>
+      </div>
+    </div>
+    {% else %}
+    <div class="about-card"><p>Dataset counts will appear after the evaluation metrics are generated.</p></div>
+    {% endif %}
+  </section>
+
+  <section class="about-section" id="pipeline" aria-labelledby="pipeline-title">
+    <div class="section-heading">
+      <p class="eyebrow">{{ icon("sparkles") }} Under the hood</p>
+      <h2 id="pipeline-title">How a photo becomes guidance</h2>
+    </div>
+    <ol class="pipeline-grid">
+      <li class="pipeline-card"><span class="step-number">1</span><span class="pipeline-icon">{{ icon("camera") }}</span><h3>Capture</h3><p>The browser sends a JPEG frame or an uploaded file (max 5 MB).</p></li>
+      <li class="pipeline-card"><span class="step-number">2</span><span class="pipeline-icon">{{ icon("image") }}</span><h3>Preprocess</h3><p>OpenCV resizes to 224 × 224, converts BGR to RGB and scales pixels to 0–1.</p></li>
+      <li class="pipeline-card"><span class="step-number">3</span><span class="pipeline-icon">{{ icon("scan") }}</span><h3>Classify</h3><p>MobileNetV2 transfer learning returns a probability for each of six classes.</p></li>
+      <li class="pipeline-card"><span class="step-number">4</span><span class="pipeline-icon">{{ icon("leaf") }}</span><h3>Explain</h3><p>Grad-CAM highlights influential pixels. The result is stored with its guidance.</p></li>
+    </ol>
+  </section>
+
+  <section class="about-section" id="limitations" aria-labelledby="limitations-title">
+    <div class="section-heading">
+      <p class="eyebrow">{{ icon("alert") }} Honest limits</p>
+      <h2 id="limitations-title">What EcoSort can't do</h2>
+      <p>These limitations are part of the project, not hidden fine print.</p>
+    </div>
+    <div class="limitations-grid">
+      <div class="limitation-card">{{ icon("alert") }}<h3>Only six classes</h3><p>Batteries, clothes, electronics, mixed piles and unknown items are outside the model's vocabulary.</p></div>
+      <div class="limitation-card">{{ icon("box") }}<h3>One item at a time</h3><p>The model looks at the whole photo. A pile of mixed waste can confuse it, and hidden materials are invisible.</p></div>
+      <div class="limitation-card">{{ icon("camera") }}<h3>Photos matter</h3><p>Low light, blur, clutter and unusual angles reduce confidence. The model learned mostly from studio-style object photos.</p></div>
+      <div class="limitation-card">{{ icon("apple") }}<h3>Organic is food-led</h3><p>The organic class was trained on food/food-waste images. Garden waste and compost mixes may be less reliable.</p></div>
+      <div class="limitation-card">{{ icon("map-pin") }}<h3>Rules are local</h3><p>Bin colours and accepted materials vary by city and country. Guidance here is general and marked where it varies.</p></div>
+      <div class="limitation-card">{{ icon("info") }}<h3>Confidence is not certainty</h3><p>A softmax probability reflects the model's training, not a guarantee. Low-confidence results are not given a bin recommendation.</p></div>
+    </div>
+  </section>
+
+  <section class="about-note" aria-label="Privacy and project note">
+    <div>{{ icon("lock") }}<p><strong>Privacy.</strong> Images are stored locally in this app's SQLite database folder only. There is no cloud account and no external API call for predictions.</p></div>
+    <div>{{ icon("book") }}<p><strong>Project.</strong> Built for “Emerging Technologies: A Primer (22ETP58)” using Python, TensorFlow/Keras, OpenCV, Flask, SQLite, HTML, CSS and vanilla JavaScript.</p></div>
+  </section>
+</div>
+{% endblock %}
