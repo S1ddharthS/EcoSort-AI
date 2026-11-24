@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+
+{% block title %}Something went wrong — EcoSort AI{% endblock %}
+{% block description %}EcoSort AI hit an unexpected error. Please try again.{% endblock %}
+
+{% block content %}
+<section class="error-page container">
+  <div class="error-art" aria-hidden="true">
+    <span class="error-code">500</span>
+    <div class="error-orbit error-orbit-one"></div>
+    <div class="error-orbit error-orbit-two"></div>
+    <div class="error-leaf">{{ icon("alert") }}</div>
+  </div>
+  <p class="eyebrow">{{ icon("alert") }} A temporary problem</p>
+  <h1>Something went wrong on our side</h1>
+  <p class="error-lead">Your photo wasn't classified. Nothing was deleted from History. Please try again in a moment.</p>
+  <div class="error-actions">
+    <a class="btn btn-primary" href="{{ url_for('main.classify_page') }}">{{ icon("refresh") }} Try classifying again</a>
+    <a class="btn btn-ghost" href="{{ url_for('main.home') }}">{{ icon("home") }} Back to home</a>
+  </div>
+</section>
+{% endblock %}

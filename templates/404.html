@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+
+{% block title %}{{ error_title | default("Page not found") }} — EcoSort AI{% endblock %}
+{% block description %}That page couldn't be found. Head back to EcoSort AI.{% endblock %}
+
+{% block content %}
+<section class="error-page container">
+  <div class="error-art" aria-hidden="true">
+    <span class="error-code">404</span>
+    <div class="error-orbit error-orbit-one"></div>
+    <div class="error-orbit error-orbit-two"></div>
+    <div class="error-leaf">{{ icon("leaf") }}</div>
+  </div>
+  <p class="eyebrow">{{ icon("info") }} Off the beaten path</p>
+  <h1>{{ error_title | default("This page isn't here") }}</h1>
+  <p class="error-lead">{{ error_message | default("The page may have moved, or the link might be mistyped. Let's get you back to sorting.") }}</p>
+  <div class="error-actions">
+    <a class="btn btn-primary" href="{{ url_for('main.home') }}">{{ icon("home") }} Back to home</a>
+    <a class="btn btn-ghost" href="{{ url_for('main.classify_page') }}">{{ icon("scan") }} Classify waste</a>
+  </div>
+</section>
+{% endblock %}
