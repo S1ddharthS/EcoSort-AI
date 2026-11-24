@@ -12,6 +12,7 @@ env/
 database/*.db
 database/*.db-wal
 database/*.db-shm
+tests/*.db
 logs/
 static/uploads/*
 !static/uploads/.gitkeep
