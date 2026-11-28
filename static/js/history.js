@@ -13,6 +13,7 @@
   const empty = document.getElementById("history-empty");
   const emptyTitle = document.getElementById("history-empty-title");
   const emptyText = document.getElementById("history-empty-text");
+  const emptyAction = document.getElementById("history-empty-action");
   const showAllButton = document.getElementById("show-all-button");
   const filterButtons = Array.from(document.querySelectorAll(".filter-pill"));
   const esc =
@@ -22,7 +23,8 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     };
 
   const state = {
@@ -133,11 +135,13 @@
       emptyTitle.textContent = "No " + label + " items yet";
       emptyText.textContent =
         "There are other items in your history, but none in this category. Try another filter or classify something new.";
+      if (emptyAction) emptyAction.hidden = true;
       showAllButton.hidden = false;
     } else {
       emptyTitle.textContent = "No classifications yet";
       emptyText.textContent =
         "Take your first photo and it will appear here automatically, with its category and confidence.";
+      if (emptyAction) emptyAction.hidden = false;
       showAllButton.hidden = true;
     }
   }
