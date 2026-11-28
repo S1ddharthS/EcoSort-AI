@@ -25,11 +25,13 @@ CLASS_DISPLAY = {
 def get_db() -> sqlite3.Connection:
     """Return the request-scoped database connection."""
     if "db" not in g:
-        connection = sqlite3.connect(
-            current_app.config["DATABASE"], timeout=10
-        )
+        db_target = str(current_app.config["DATABASE"])
+        if db_target != ":memory:" and not db_target.startswith("file:"):
+            Path(db_target).parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(db_target, timeout=10)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA busy_timeout = 5000")
         g.db = connection
     return g.db
 
@@ -137,8 +139,6 @@ def clear_predictions() -> list[str]:
 def get_stats() -> dict:
     """Live statistics shown on the home page and returned by /api/stats."""
     connection = get_db()
-    total = connection.execute("SELECT COUNT(*) AS n FROM predictions").fetchone()["n"]
-
     counts = {name: 0 for name in CLASS_NAMES}
     for row in connection.execute(
         "SELECT predicted_class, COUNT(*) AS n FROM predictions "
@@ -146,29 +146,25 @@ def get_stats() -> dict:
     ).fetchall():
         counts[row["predicted_class"]] = row["n"]
 
+    total = sum(counts.values())
+    non_zero = [(name, count) for name, count in counts.items() if count > 0]
     most_common = None
-    if total:
-        row = connection.execute(
-            "SELECT predicted_class FROM predictions "
-            "GROUP BY predicted_class ORDER BY COUNT(*) DESC, predicted_class ASC "
-            "LIMIT 1"
+    last_classified_at = None
+    if non_zero:
+        top_name, top_count = min(non_zero, key=lambda item: (-item[1], item[0]))
+        most_common = {
+            "category": top_name,
+            "display_name": CLASS_DISPLAY.get(top_name, top_name.title()),
+            "count": top_count,
+        }
+        last = connection.execute(
+            "SELECT created_at FROM predictions ORDER BY id DESC LIMIT 1"
         ).fetchone()
-        if row:
-            most_common = {
-                "category": row["predicted_class"],
-                "display_name": CLASS_DISPLAY.get(
-                    row["predicted_class"], row["predicted_class"].title()
-                ),
-                "count": counts.get(row["predicted_class"], 0),
-            }
-
-    last = connection.execute(
-        "SELECT created_at FROM predictions ORDER BY id DESC LIMIT 1"
-    ).fetchone()
+        last_classified_at = last["created_at"] if last else None
 
     return {
         "total": total,
         "most_common": most_common,
         "per_category": counts,
-        "last_classified_at": last["created_at"] if last else None,
+        "last_classified_at": last_classified_at,
     }
