@@ -15,7 +15,6 @@ from pathlib import Path
 import numpy as np
 
 from database.db import CLASS_DISPLAY, CLASS_NAMES
-from ml.gradcam import build_grad_model, generate_gradcam
 from ml.preprocess import preprocess_image
 
 logger = logging.getLogger(__name__)
@@ -121,6 +120,8 @@ class ModelService:
     def _prepare_gradcam(self) -> None:
         """Build the explanation graph once, without blocking predictions on it."""
         try:
+            from ml.gradcam import build_grad_model
+
             self.grad_model = build_grad_model(
                 self.model, self.meta.get("gradcam_layer")
             )
@@ -134,9 +135,12 @@ class ModelService:
         """Return a Grad-CAM overlay for the predicted category, if available."""
         if self.grad_model is None or category not in self.class_names:
             return None
-        return generate_gradcam(
-            self.grad_model, image_array, self.class_names.index(category)
-        )
+        from ml.gradcam import generate_gradcam
+
+        with self._lock:
+            return generate_gradcam(
+                self.grad_model, image_array, self.class_names.index(category)
+            )
 
     @property
     def loaded(self) -> bool:

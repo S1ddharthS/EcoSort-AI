@@ -15,10 +15,13 @@ feature layer. This also works after saving and reloading the .keras file.
 from __future__ import annotations
 
 import base64
+from typing import TYPE_CHECKING
 
 import cv2
 import numpy as np
-import tensorflow as tf
+
+if TYPE_CHECKING:
+    import tensorflow as tf
 
 
 def _pick_feature_layer(model: tf.keras.Model, preferred_name: str | None = None):
@@ -30,6 +33,8 @@ def _pick_feature_layer(model: tf.keras.Model, preferred_name: str | None = None
     3. the last top-level Conv2D layer (custom CNN);
     4. the first nested 4-D layer.
     """
+    import tensorflow as tf
+
     if preferred_name:
         try:
             layer = model.get_layer(preferred_name)
@@ -62,11 +67,18 @@ def build_grad_model(
     model: tf.keras.Model, preferred_name: str | None = None
 ) -> tf.keras.Model:
     """Rebuild the loaded model and expose the feature layer plus predictions."""
+    import tensorflow as tf
+
     feature_layer = _pick_feature_layer(model, preferred_name)
     inputs = tf.keras.Input(shape=model.input_shape[1:], name="gradcam_input")
     tensor = inputs
     features = None
-    for layer in model.layers[1:]:  # skip the original InputLayer
+    layers_to_call = (
+        model.layers[1:]
+        if model.layers and isinstance(model.layers[0], tf.keras.layers.InputLayer)
+        else model.layers
+    )
+    for layer in layers_to_call:
         tensor = layer(tensor, training=False)
         if layer.name == feature_layer.name:
             features = tensor
@@ -85,10 +97,14 @@ def generate_gradcam(
 
     Any failure returns None so a prediction can still succeed.
     """
+    import tensorflow as tf
+
     try:
         image_batch = np.expand_dims(image_array, axis=0).astype(np.float32)
         with tf.GradientTape() as tape:
             feature_maps, predictions = grad_model(image_batch, training=False)
+            if class_index < 0 or class_index >= int(predictions.shape[-1]):
+                return None
             class_score = predictions[:, class_index]
         gradients = tape.gradient(class_score, feature_maps)
         if gradients is None:
@@ -109,7 +125,10 @@ def generate_gradcam(
         heatmap_uint8 = np.uint8(255 * np.clip(heatmap, 0, 1))
         coloured = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
 
-        base = cv2.resize(np.uint8(image_array * 255.0), (output_size, output_size))
+        base = cv2.resize(
+            np.uint8(np.clip(image_array, 0.0, 1.0) * 255.0),
+            (output_size, output_size),
+        )
         base_bgr = cv2.cvtColor(base, cv2.COLOR_RGB2BGR)
         overlay = cv2.addWeighted(base_bgr, 0.6, coloured, 0.4, 0)
         ok, buffer = cv2.imencode(".jpg", overlay, [cv2.IMWRITE_JPEG_QUALITY, 85])
