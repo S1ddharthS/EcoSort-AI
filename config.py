@@ -45,6 +45,7 @@ class Config:
     # Simple in-memory rate limiting (per client IP)
     RATE_LIMIT_REQUESTS = 20
     RATE_LIMIT_WINDOW = 60  # seconds
+    TRUST_PROXY_COUNT = max(0, int(os.environ.get("TRUST_PROXY_COUNT", "0") or "0"))
 
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
     TESTING = False

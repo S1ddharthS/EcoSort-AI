@@ -34,6 +34,8 @@ from flask import (
     send_from_directory,
     url_for,
 )
+from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import database.db as db
 from config import Config
@@ -65,15 +67,28 @@ class ApiError(Exception):
 class RateLimiter:
     """Small in-memory sliding-window limiter (single process only)."""
 
-    def __init__(self, limit: int, window_seconds: int):
+    def __init__(self, limit: int, window_seconds: int, max_keys: int = 2048):
         self.limit = limit
         self.window = window_seconds
+        self.max_keys = max_keys
         self._hits: dict[str, deque] = defaultdict(deque)
         self._lock = Lock()
+
+    def _prune_stale(self, now: float) -> None:
+        stale_keys = []
+        for client_key, hits in self._hits.items():
+            while hits and now - hits[0] > self.window:
+                hits.popleft()
+            if not hits:
+                stale_keys.append(client_key)
+        for client_key in stale_keys:
+            del self._hits[client_key]
 
     def allow(self, key: str) -> tuple[bool, int]:
         now = time.monotonic()
         with self._lock:
+            if len(self._hits) > self.max_keys:
+                self._prune_stale(now)
             hits = self._hits[key]
             while hits and now - hits[0] > self.window:
                 hits.popleft()
@@ -173,6 +188,7 @@ def _read_image_request() -> tuple[bytes, str]:
     config = current_app.config
 
     if "image" in request.files:
+        source_kind = "upload"
         upload = request.files["image"]
         original_name = Path(upload.filename or "").name
         if not upload or not original_name:
@@ -198,6 +214,7 @@ def _read_image_request() -> tuple[bytes, str]:
                 status=413,
             )
     elif request.is_json:
+        source_kind = "webcam"
         payload = request.get_json(silent=True)
         if not isinstance(payload, dict):
             raise ApiError("We couldn't read the request. Please try again.")
@@ -206,7 +223,6 @@ def _read_image_request() -> tuple[bytes, str]:
             raise ApiError(
                 "No camera image was received. Please capture a photo and try again."
             )
-        mime = None
         encoded = image_data
         if image_data.startswith("data:"):
             header, separator, encoded = image_data.partition(",")
@@ -246,7 +262,7 @@ def _read_image_request() -> tuple[bytes, str]:
         )
     except ImageValidationError as exc:
         raise ApiError(str(exc)) from None
-    return data, "webcam" if mime and "image" in mime else "upload"
+    return data, source_kind
 
 
 def _check_model_ready() -> ModelService:
@@ -338,19 +354,13 @@ def about_page():
         except (OSError, ValueError):
             meta = {}
 
-    image_paths = {
-        "confusion_matrix": Path(config["MODEL_DIR"]).parent.parent
-        / "static"
+    static_img_dir = (
+        Path(current_app.static_folder or (Path(current_app.root_path) / "static"))
         / "img"
-        / "confusion_matrix.png",
-        "training_curves": Path(config["MODEL_DIR"]).parent.parent
-        / "static"
-        / "img"
-        / "training_curves.png",
-    }
+    )
     images = {
-        "confusion_matrix": image_paths["confusion_matrix"].is_file(),
-        "training_curves": image_paths["training_curves"].is_file(),
+        "confusion_matrix": (static_img_dir / "confusion_matrix.png").is_file(),
+        "training_curves": (static_img_dir / "training_curves.png").is_file(),
     }
     return render_template(
         "about.html", metrics=metrics, meta=meta, images=images
@@ -424,7 +434,7 @@ def predict():
     # never written to disk, so user-supplied names and metadata are discarded.
     filename = f"{uuid.uuid4().hex}.jpg"
     image_path = _relative_image_path(filename)
-    upload_dir = Path(config["UPLOAD_FOLDER"])
+    upload_dir = _upload_folder()
     upload_dir.mkdir(parents=True, exist_ok=True)
     try:
         preview = make_preview_jpeg(image_bytes)
@@ -546,6 +556,12 @@ def create_app(test_config: dict | None = None) -> Flask:
     if test_config:
         app.config.update(test_config)
 
+    proxy_hops = int(app.config.get("TRUST_PROXY_COUNT", 0) or 0)
+    if proxy_hops > 0:
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app, x_for=proxy_hops, x_proto=proxy_hops, x_host=proxy_hops
+        )
+
     Path(app.config["UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
     configure_logging(app)
 
@@ -661,6 +677,21 @@ def create_app(test_config: dict | None = None) -> Flask:
                 500,
             )
         return render_template("500.html"), 500
+
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(error: HTTPException):
+        if request.path.startswith("/api/"):
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": error.name or "Request error",
+                        "message": error.description or "The request could not be completed.",
+                    }
+                ),
+                error.code or 400,
+            )
+        return error
 
     return app
 
