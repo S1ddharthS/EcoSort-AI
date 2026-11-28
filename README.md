@@ -63,8 +63,8 @@ Evaluated on 509 unseen test images (70/15/15 stratified train/val/test split):
 
 ### 2. Setup Virtual Environment
 ```bash
-# Clone or navigate to the project directory
-cd "EcoSort AI"
+# Navigate to the project directory
+cd EcoSort-AI
 
 # Create a virtual environment
 python -m venv .venv
@@ -95,11 +95,14 @@ Open your browser at **`http://127.0.0.1:5000`** (or the port displayed in termi
 
 ## 🧪 Running Tests
 
-The test suite contains **62 tests** covering database operations, API endpoints, upload validation, security headers, rate limiting, and full Playwright end-to-end browser flows:
+The test suite contains **78 tests** covering database operations, ML service behavior, API endpoints, upload validation, security headers, rate limiting, and full Playwright end-to-end browser flows:
 
 ```bash
-# Run unit and integration tests (fast, ~4s)
-python -m pytest tests/test_*.py -v
+# Run unit and integration tests (fast, cross-platform)
+python -m pytest --ignore=tests/e2e -v
+
+# Install Chromium once if running Playwright E2E tests for the first time
+python -m playwright install chromium
 
 # Run browser E2E tests with Playwright (~35s)
 python -m pytest tests/e2e -v
@@ -114,7 +117,7 @@ python -m pytest
 
 ### Data Preparation
 The dataset was curated from TrashNet and organic waste image datasets, preprocessed into standardized 224x224 RGB images with a stratified **70% train / 15% val / 15% test** split:
-- `train`: 2,376 images
+- `train`: 2,356 images
 - `val`: 507 images
 - `test`: 509 images
 
@@ -125,8 +128,8 @@ python ml/prepare_data.py
 
 ### Model Training
 Training runs two phases:
-1. **Feature Extraction**: Trains dense classification head on frozen MobileNetV2 base with dropout and class balancing.
-2. **Fine-Tuning**: Unfreezes top convolutional blocks with reduced learning rate (1e-4) and cosine decay.
+1. **Feature Extraction**: Trains the classification head on a frozen MobileNetV2 base with dropout and class balancing (6 epochs).
+2. **Fine-Tuning**: Unfreezes the last 30 MobileNetV2 layers (keeping BatchNorm frozen) with reduced learning rate (1e-4), `ReduceLROnPlateau`, and `EarlyStopping` (6 epochs).
 3. **Baseline Comparison**: Trains a custom 4-layer convolutional network from scratch.
 
 To re-train:
@@ -172,7 +175,7 @@ Visit `http://localhost:8080`.
 ## 📁 Project Directory Layout
 
 ```
-EcoSort AI/
+EcoSort-AI/
 ├── app.py                      # Flask application factory, routes & API endpoints
 ├── config.py                   # Centralized application configuration
 ├── Dockerfile                  # Production container configuration
@@ -184,7 +187,7 @@ EcoSort AI/
 ├── database/
 │   ├── db.py                   # SQLite data access layer
 │   ├── schema.sql              # Database schema & seeded recommendations
-│   └── ecosort.db              # SQLite database file
+│   └── ecosort.db              # SQLite database file (created at runtime)
 ├── ml/
 │   ├── model/                  # Model weights (ecosort_model.keras, metrics.json)
 │   ├── prepare_data.py         # Dataset preparation & split script
@@ -193,13 +196,16 @@ EcoSort AI/
 │   ├── evaluate.py             # Held-out evaluation, metrics, and curve generation
 │   ├── predict.py              # Model inference & prediction service
 │   └── gradcam.py              # Grad-CAM heatmap generation
+├── scripts/
+│   ├── capture_screenshots.py  # Responsive Playwright screenshot utility
+│   └── diagnose_real_world.py  # External dataset diagnostic CLI
 ├── static/
 │   ├── css/styles.css          # Design system & responsive styles
 │   ├── fonts/                  # Self-hosted WOFF2 web fonts (Sora & Inter)
 │   ├── img/                    # Icons, logo, confusion matrix, curves
 │   └── js/                     # Modular frontend logic (main, classify, history, learn)
 ├── templates/                  # Jinja2 HTML templates (home, classify, history, etc.)
-├── tests/                      # Unit, API, database, and Playwright e2e tests
+├── tests/                      # Unit, API, database, ML service, and Playwright e2e tests
 └── screenshots/                # Responsive screenshots (375px, 768px, 1440px)
 ```
 

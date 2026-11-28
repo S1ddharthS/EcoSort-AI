@@ -55,8 +55,8 @@ gunicorn -c gunicorn.conf.py app:app
 ```
 
 ### Key `gunicorn.conf.py` Settings
-- **Workers**: 1-2 sync workers recommended (each worker loads the TensorFlow model in memory; keeping worker count modest prevents RAM exhaustion on 1GB/2GB cloud instances).
-- **Timeout**: 120 seconds (ensures first-request model warm-up and Grad-CAM calculations finish cleanly without dropping connections).
+- **Workers & Threads**: 1 `gthread` worker (`WEB_CONCURRENCY=1`) with 4 threads (`GUNICORN_THREADS=4`). Keeping a single worker avoids duplicating the TensorFlow model in RAM and preserves the in-memory per-process rate limiter, while threads keep `/health` checks responsive during inference.
+- **Timeout**: 180 seconds (`GUNICORN_TIMEOUT=180`), ensuring first-request model warm-up and Grad-CAM calculations finish cleanly without dropping connections.
 - **Bind**: `0.0.0.0:8080` (or configured via `$PORT`).
 
 ---
@@ -70,6 +70,10 @@ gunicorn -c gunicorn.conf.py app:app
 | `ECOSORT_DB` | `database/ecosort.db` | Absolute path to SQLite database file |
 | `ECOSORT_UPLOADS` | `static/uploads` | Directory for storing uploaded history preview JPEGs |
 | `ECOSORT_MODEL` | `ml/model/ecosort_model.keras` | Path to trained Keras model file |
+| `TRUST_PROXY_COUNT` | `0` | Number of trusted reverse proxies (`1` behind Render/Railway/Nginx for `ProxyFix`) |
+| `WEB_CONCURRENCY` | `1` | Gunicorn worker process count |
+| `GUNICORN_THREADS` | `4` | Threads per `gthread` worker |
+| `GUNICORN_TIMEOUT` | `180` | Gunicorn worker timeout in seconds |
 | `LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
 | `TF_CPP_MIN_LOG_LEVEL` | `1` | TensorFlow C++ console logging verbosity |
 
@@ -102,7 +106,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 120s;
+        proxy_read_timeout 180s;
     }
 }
 ```

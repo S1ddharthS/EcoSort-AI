@@ -1,8 +1,8 @@
 # EcoSort AI — Project Handoff Note
 
-**Date**: 2026-11-24  
+**Date**: 2026-11-28  
 **Project**: EcoSort AI – An Intelligent Waste Classification and Recycling Recommendation System  
-**Status**: 100% Complete, Fully Verified, All 62 Tests Passing.
+**Status**: 100% Complete, Fully Verified, All 78 Tests Passing.
 
 ---
 
@@ -13,8 +13,8 @@
    - Transfer learning using **MobileNetV2** (frozen feature extractor base + fine-tuned top blocks + dense classification head).
    - Custom baseline CNN trained from scratch for direct empirical comparison.
 2. **Dataset**:
-   - 3,392 images prepared across 6 classes: `plastic`, `paper`, `cardboard`, `glass`, `metal`, `organic`.
-   - Stratified 70/15/15 split: Train (2,376), Validation (507), Test (509).
+   - 3,372 images prepared across 6 classes: `plastic`, `paper`, `cardboard`, `glass`, `metal`, `organic`.
+   - Stratified 70/15/15 split: Train (2,356), Validation (507), Test (509).
 3. **Real Measured Metrics**:
    - Evaluated on the 509 held-out test images via `ml/evaluate.py`.
    - **Test Accuracy**: **93.52%** (vs 46.56% baseline CNN).
@@ -52,8 +52,8 @@
 
 ### C. Testing & Verification
 1. **Automated Test Suite**:
-   - **62 tests** in total: 57 unit/API/database/preprocessing tests + 5 Playwright browser end-to-end flow tests.
-   - **100% pass rate** (`62 passed in 55.53s`).
+   - **78 tests** in total: 73 unit/API/database/ML-service tests + 5 Playwright browser end-to-end flow tests.
+   - **100% pass rate**.
    - Root-cause bug in `tests/e2e/test_flows.py` resolved: fixed `ECOSORT_MODEL` environment variable inheritance so the E2E test server accurately loads the production model.
    - Registered custom `e2e` mark in `pytest.ini` to eliminate all pytest warnings.
 2. **Responsive Screenshots**:
@@ -77,7 +77,7 @@
 - [x] Learn search works, About shows real metrics, dark mode works
 - [x] No console errors, broken links or dead buttons
 - [x] Layout is clean on phone, tablet and desktop (15 screenshots reviewed)
-- [x] All 62 tests pass
+- [x] All 78 tests pass
 
 ---
 
@@ -89,7 +89,7 @@ python app.py
 # Access at http://127.0.0.1:5000
 
 # 2. Run the fast unit test suite
-python -m pytest tests/test_*.py -q
+python -m pytest --ignore=tests/e2e -q
 
 # 3. Run the Playwright E2E browser tests
 python -m pytest tests/e2e -v

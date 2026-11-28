@@ -19,18 +19,18 @@ Unlike black-box classifiers that make wild guesses on unclear images, EcoSort A
 ### 2.1 The Machine Learning Pipeline
 - **Base Architecture**: MobileNetV2 (pre-trained on ImageNet-1k).
 - **Why MobileNetV2 over ResNet50 or VGG16?**:
-  - *Inverted Residual Blocks & Linear Bottlenecks*: Allows high representational capacity with drastically lower parameter count (~2.2M parameters compared to ~25M for ResNet50 and ~138M for VGG16).
+  - *Inverted Residual Blocks & Linear Bottlenecks*: Allows high representational capacity with drastically lower parameter count (2,265,670 parameters compared to ~25M for ResNet50 and ~138M for VGG16).
   - *Depthwise Separable Convolutions*: Splits traditional standard convolution into depthwise spatial filtering followed by 1x1 pointwise channel projection. This cuts computational cost (FLOPs) by nearly 85-90%, making real-time CPU inference practical without requiring a dedicated GPU server.
 - **Input Dimension**: `224 × 224 × 3` RGB, normalized to `[0, 1]`.
 - **Training Strategy (Two-Stage Transfer Learning)**:
-  1. *Stage 1 (Feature Extraction)*: Frozen MobileNetV2 backbone; trained GlobalAveragePooling2D + Dense(128, ReLU) + Dropout(0.3) + Dense(6, Softmax) for 10 epochs.
-  2. *Stage 2 (Fine-Tuning)*: Unfroze the top convolutional blocks (`mobilenet_features`), trained with a reduced learning rate ($1 \times 10^{-4}$) and cosine decay for 8 epochs.
+  1. *Stage 1 (Feature Extraction)*: Frozen MobileNetV2 backbone; trained `GlobalAveragePooling2D` + `Dropout(0.25)` + `Dense(6, Softmax)` for 6 epochs with Adam (`1e-3`).
+  2. *Stage 2 (Fine-Tuning)*: Unfroze the last 30 layers of MobileNetV2 (keeping BatchNorm layers frozen), trained with a reduced learning rate ($1 \times 10^{-4}$) with `ReduceLROnPlateau` and `EarlyStopping` for 6 epochs.
   3. *Class Imbalance Handling*: Stratified splitting with inverse-frequency class weights computed and supplied to the cross-entropy loss function.
 
 ### 2.2 Explainable AI: Grad-CAM (Gradient-Weighted Class Activation Mapping)
 - **Concept**: Neural networks often suffer from the "black box" criticism. Grad-CAM visualizes what the model "looked at" when predicting a class.
 - **How it works mathematically**:
-  1. Take the feature activation map $A^k$ of the last convolutional layer (`out_relu` or `mobilenet_features`).
+  1. Take the feature activation map $A^k$ of the last convolutional layer (`Conv_1`, exposed as `mobilenet_features`).
   2. Compute the gradient of the class score $y^c$ with respect to feature map activations:
      $$\alpha_k^c = \frac{1}{Z} \sum_{i} \sum_{j} \frac{\partial y^c}{\partial A_{i,j}^k}$$
   3. Weight each activation map by its gradient importance $\alpha_k^c$ and apply a ReLU to retain only features that positively correlate with the predicted class:
@@ -53,7 +53,7 @@ Unlike black-box classifiers that make wild guesses on unclear images, EcoSort A
 | :--- | :---: | :---: | :--- |
 | **Test Accuracy** | **93.52%** | 46.56% | +46.96% improvement through transfer learning |
 | **Macro F1-Score** | **92.48%** | 42.59% | High balance across all categories |
-| **Parameters** | 2,423,238 | ~2.5M | Equal size, but vastly superior representation |
+| **Parameters** | 2,265,670 | ~2.5M | Compact footprint with vastly superior representation |
 | **Test Set Size** | 509 images | 509 images | Held-out 15% split never seen during training |
 | **Inference Latency**| ~85 ms (CPU) | ~60 ms (CPU) | Real-time response for end-users |
 
@@ -70,7 +70,7 @@ Unlike black-box classifiers that make wild guesses on unclear images, EcoSort A
 ## 4. Frequent Examiner Questions & Model Answers
 
 ### Q1: Why didn't you train a Vision Transformer (ViT) or ResNet152?
-**Answer**: "Vision Transformers require tens or hundreds of thousands of training samples to learn inductive biases that convolutional layers possess inherently. On small-to-medium datasets (~3,400 images), ViTs easily overfit. ResNet152 has over 60 million parameters and requires substantial RAM and computation. MobileNetV2 uses depthwise separable convolutions to deliver 93.5% accuracy with only 2.4 million parameters, making it lightweight enough to run on low-cost edge devices or basic cloud instances."
+**Answer**: "Vision Transformers require tens or hundreds of thousands of training samples to learn inductive biases that convolutional layers possess inherently. On small-to-medium datasets (~3,372 images), ViTs easily overfit. ResNet152 has over 60 million parameters and requires substantial RAM and computation. MobileNetV2 uses depthwise separable convolutions to deliver 93.52% accuracy with only 2,265,670 parameters, making it lightweight enough to run on low-cost edge devices or basic cloud instances."
 
 ### Q2: What happens if someone uploads a picture of a dog or a shoe?
 **Answer**: "This is where our safety thresholding is critical. In a traditional softmax network with $K=6$, the network is forced to distribute probabilities across the 6 waste classes. However, out-of-domain images typically yield diffuse probabilities where no single class reaches a confident score. When the top class probability is below our calibrated threshold of `0.60`, EcoSort AI triggers the **'Not Sure' fallback state**. It transparently informs the user that the item cannot be confidently identified and suggests manual guide lookup rather than misclassifying it."
@@ -92,7 +92,7 @@ Unlike black-box classifiers that make wild guesses on unclear images, EcoSort A
 ---
 
 ## 5. Summary of College Requirements Met
-- **Real working code**: Tested end-to-end with 62 automated unit, API, and Playwright tests.
+- **Real working code**: Tested end-to-end with 78 automated unit, API, ML-service, and Playwright tests.
 - **Zero fake data or mock metrics**: All evaluation statistics derived from the held-out test split.
 - **Responsive & Accessible**: Works across smartphone, tablet, and desktop viewports.
 - **Course Integration**: Fully aligned with syllabus guidelines for *Emerging Technologies: A Primer (22ETP58)*.
