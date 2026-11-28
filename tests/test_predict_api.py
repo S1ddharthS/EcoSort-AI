@@ -182,3 +182,130 @@ def test_security_headers_are_present(client):
     assert response.headers["X-Frame-Options"] == "DENY"
     assert "default-src 'self'" in response.headers["Content-Security-Policy"]
     assert "camera=(self)" in response.headers["Permissions-Policy"]
+
+
+def test_predict_accepts_png_and_webp_uploads(client, png_bytes, webp_bytes):
+    for data, filename, mime in (
+        (png_bytes, "bottle.png", "image/png"),
+        (webp_bytes, "can.webp", "image/webp"),
+    ):
+        response = post_image(client, data, filename=filename, mime=mime)
+        assert response.status_code == 200, filename
+        assert response.get_json()["ok"] is True
+
+
+def test_predict_rejects_malformed_json_and_bad_data_urls(client, jpeg_bytes):
+    bad_json = client.post(
+        "/api/predict",
+        data="{not-json",
+        content_type="application/json",
+        headers={"Accept": "application/json"},
+    )
+    assert bad_json.status_code == 400
+    assert bad_json.get_json()["ok"] is False
+
+    list_json = client.post(
+        "/api/predict",
+        json=["not-an-object"],
+        headers={"Accept": "application/json"},
+    )
+    assert list_json.status_code == 400
+    assert list_json.get_json()["ok"] is False
+
+    encoded = base64.b64encode(jpeg_bytes).decode("ascii")
+    gif_header = client.post(
+        "/api/predict",
+        json={"image": "data:image/gif;base64," + encoded},
+        headers={"Accept": "application/json"},
+    )
+    assert gif_header.status_code == 400
+    assert "format" in gif_header.get_json()["message"].lower()
+
+    non_image_header = client.post(
+        "/api/predict",
+        json={"image": "data:text/plain;base64," + encoded},
+        headers={"Accept": "application/json"},
+    )
+    assert non_image_header.status_code == 400
+    assert non_image_header.get_json()["ok"] is False
+
+
+def test_api_method_not_allowed_returns_json(client):
+    for method, path in (("GET", "/api/predict"), ("POST", "/api/stats")):
+        response = client.open(path, method=method)
+        assert response.status_code == 405
+        assert response.is_json
+        assert response.get_json()["ok"] is False
+
+
+def test_rate_limiter_prunes_stale_keys():
+    import time
+
+    from app import RateLimiter
+
+    limiter = RateLimiter(limit=2, window_seconds=0.05, max_keys=2)
+    assert limiter.allow("10.0.0.1")[0] is True
+    assert limiter.allow("10.0.0.2")[0] is True
+    assert limiter.allow("10.0.0.3")[0] is True
+    time.sleep(0.08)
+    assert limiter.allow("10.0.0.4")[0] is True
+    assert "10.0.0.1" not in limiter._hits
+    assert "10.0.0.4" in limiter._hits
+
+
+def test_proxy_fix_isolates_forwarded_client_ips(tmp_path, jpeg_bytes):
+    from app import create_app
+    from tests.conftest import FakeModelService
+
+    proxy_app = create_app(
+        {
+            "TESTING": True,
+            "DATABASE": str(tmp_path / "proxy.db"),
+            "UPLOAD_FOLDER": str(tmp_path / "uploads"),
+            "MODEL_PATH": str(tmp_path / "missing.keras"),
+            "CLASS_NAMES_PATH": str(tmp_path / "missing_classes.json"),
+            "RATE_LIMIT_REQUESTS": 1,
+            "RATE_LIMIT_WINDOW": 60,
+            "TRUST_PROXY_COUNT": 1,
+        }
+    )
+    proxy_app.extensions["model_service"] = FakeModelService()
+    proxy_client = proxy_app.test_client()
+
+    first = proxy_client.post(
+        "/api/predict",
+        data=upload_payload(jpeg_bytes),
+        content_type="multipart/form-data",
+        headers={"X-Forwarded-For": "203.0.113.10"},
+    )
+    assert first.status_code == 200
+
+    blocked = proxy_client.post(
+        "/api/predict",
+        data=upload_payload(jpeg_bytes),
+        content_type="multipart/form-data",
+        headers={"X-Forwarded-For": "203.0.113.10"},
+    )
+    assert blocked.status_code == 429
+
+    other_ip = proxy_client.post(
+        "/api/predict",
+        data=upload_payload(jpeg_bytes),
+        content_type="multipart/form-data",
+        headers={"X-Forwarded-For": "203.0.113.11"},
+    )
+    assert other_ip.status_code == 200
+
+
+def test_health_reports_degraded_when_database_fails(app, client, monkeypatch):
+    from database import db
+
+    def broken_db():
+        raise RuntimeError("sqlite unavailable")
+
+    monkeypatch.setattr(db, "get_db", broken_db)
+    response = client.get("/health")
+    assert response.status_code == 503
+    payload = response.get_json()
+    assert payload["status"] == "degraded"
+    assert payload["database"] == "error"

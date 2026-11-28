@@ -18,11 +18,18 @@ from PIL import Image, ImageDraw
 
 # Keep the module-level Flask app created by app.py away from the real model
 # and the developer database while tests are being collected.
+_BOOTSTRAP_DB = Path(__file__).parent / "__pytest_bootstrap.db"
 os.environ.setdefault("ECOSORT_MODEL", str(Path(__file__).parent / "__no_model__.keras"))
-os.environ.setdefault("ECOSORT_DB", str(Path(__file__).parent / "__pytest_bootstrap.db"))
+os.environ.setdefault("ECOSORT_DB", str(_BOOTSTRAP_DB))
 
 from app import create_app  # noqa: E402
 from database.db import CLASS_DISPLAY, CLASS_NAMES  # noqa: E402
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Remove temporary bootstrap SQLite files created during collection."""
+    for suffix in ("", "-wal", "-shm"):
+        Path(f"{_BOOTSTRAP_DB}{suffix}").unlink(missing_ok=True)
 
 
 class FakeModelService:

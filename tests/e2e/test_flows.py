@@ -25,7 +25,12 @@ pytestmark = pytest.mark.e2e
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL = ROOT / "ml" / "model" / "ecosort_model.keras"
-SAMPLE = ROOT / "data" / "processed" / "test" / "plastic" / "plastic_03aa09f3ba8f.jpg"
+_DATASET_SAMPLE = ROOT / "data" / "processed" / "test" / "plastic" / "plastic_03aa09f3ba8f.jpg"
+SAMPLE = (
+    _DATASET_SAMPLE
+    if _DATASET_SAMPLE.exists()
+    else ROOT / "static" / "img" / "example_plastic.jpg"
+)
 
 
 def free_port() -> int:

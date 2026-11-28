@@ -106,3 +106,30 @@ def test_confidence_outside_range_is_rejected(db_app):
     with db_app.app_context():
         with pytest.raises(Exception):
             db.add_prediction("uploads/high.jpg", "plastic", 1.2)
+
+
+def test_stats_break_ties_alphabetically(db_app):
+    with db_app.app_context():
+        db.add_prediction("uploads/p.jpg", "plastic", 0.85)
+        db.add_prediction("uploads/c.jpg", "cardboard", 0.85)
+        stats = db.get_stats()
+        assert stats["most_common"]["category"] == "cardboard"
+        assert stats["most_common"]["count"] == 1
+
+
+def test_get_db_creates_missing_parent_directory(tmp_path):
+    from app import create_app
+
+    nested_db = tmp_path / "nested" / "sub" / "ecosort.db"
+    custom_app = create_app(
+        {
+            "TESTING": True,
+            "DATABASE": str(nested_db),
+            "UPLOAD_FOLDER": str(tmp_path / "uploads"),
+            "MODEL_PATH": str(tmp_path / "missing.keras"),
+            "CLASS_NAMES_PATH": str(tmp_path / "missing_classes.json"),
+        }
+    )
+    assert nested_db.exists()
+    with custom_app.app_context():
+        assert len(db.list_recommendations()) == len(CLASS_NAMES)

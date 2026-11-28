@@ -102,3 +102,67 @@ def test_missing_model_banner_is_shown(client, app):
     html = client.get("/").get_data(as_text=True)
     assert "The AI model isn't installed" in html
     assert 'data-model-ready="false"' in html
+
+
+def test_about_page_renders_real_metrics_and_dataset_bars(tmp_path):
+    import json
+
+    from app import create_app
+    from tests.conftest import FakeModelService
+
+    metrics_file = tmp_path / "metrics.json"
+    meta_file = tmp_path / "model_meta.json"
+    metrics_payload = {
+        "demo": False,
+        "evaluated_at": "2026-11-24T14:52:50+00:00",
+        "model": {
+            "name": "MobileNetV2 transfer learning",
+            "input_size": [224, 224],
+            "parameters": 2265670,
+        },
+        "dataset": {
+            "total_images": 100,
+            "class_totals": {
+                "plastic": 20,
+                "paper": 20,
+                "cardboard": 15,
+                "glass": 15,
+                "metal": 15,
+                "organic": 15,
+            },
+        },
+        "test": {
+            "total": 50,
+            "accuracy": 0.94,
+            "macro_f1": 0.93,
+            "macro_precision": 0.92,
+            "macro_recall": 0.91,
+            "per_class": {
+                name: {"precision": 0.9, "recall": 0.9, "f1": 0.9, "support": 8}
+                for name in ("plastic", "paper", "cardboard", "glass", "metal", "organic")
+            },
+        },
+        "baseline": {"accuracy": 0.46, "macro_f1": 0.42},
+    }
+    metrics_file.write_text(json.dumps(metrics_payload), encoding="utf-8")
+    meta_file.write_text(json.dumps({"demo": False}), encoding="utf-8")
+
+    about_app = create_app(
+        {
+            "TESTING": True,
+            "DATABASE": str(tmp_path / "about.db"),
+            "UPLOAD_FOLDER": str(tmp_path / "uploads"),
+            "MODEL_PATH": str(tmp_path / "missing.keras"),
+            "CLASS_NAMES_PATH": str(tmp_path / "missing_classes.json"),
+            "METRICS_PATH": str(metrics_file),
+            "MODEL_META_PATH": str(meta_file),
+        }
+    )
+    about_app.extensions["model_service"] = FakeModelService()
+    html = about_app.test_client().get("/about").get_data(as_text=True)
+    assert "Real model results" in html
+    assert "94.0%" in html
+    assert "93.0%" in html
+    assert "Custom CNN baseline" in html
+    assert "2,265,670" in html
+    assert "100" in html

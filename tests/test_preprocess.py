@@ -104,3 +104,29 @@ def test_make_preview_returns_small_jpeg(jpeg_bytes):
 def test_load_rgb_rejects_unreadable_data():
     with pytest.raises(ImageValidationError, match="couldn't read"):
         load_rgb(b"not an image")
+
+
+def test_inspect_catches_decompression_bomb_error(monkeypatch, jpeg_bytes):
+    def raise_bomb(*_args, **_kwargs):
+        raise Image.DecompressionBombError("Image size exceeds limit")
+
+    monkeypatch.setattr(Image, "open", raise_bomb)
+    with pytest.raises(ImageValidationError, match="too many pixels"):
+        inspect_image_bytes(jpeg_bytes)
+
+
+def test_load_rgb_and_preview_handle_exif_orientation():
+    image = Image.new("RGB", (60, 40), (35, 110, 75))
+    exif = Image.Exif()
+    exif[274] = 6  # Rotate 90 degrees CW -> 40x60 visual -> (60, 40, 3) array
+    buf = io.BytesIO()
+    image.save(buf, format="JPEG", exif=exif.tobytes())
+    raw = buf.getvalue()
+
+    rgb = load_rgb(raw)
+    assert rgb.shape == (60, 40, 3)
+
+    preview = make_preview_jpeg(raw, max_side=64)
+    with Image.open(io.BytesIO(preview)) as out:
+        assert out.size == (40, 60)
+        assert not out.getexif()
