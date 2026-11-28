@@ -181,6 +181,7 @@ def collect_images(
         print(f"  TrashNet/{name:<10} found {len(files):4d}  usable {kept:4d}")
 
     organic_files = _image_files(organic_dir)
+    total_organic = len(organic_files)
     random.Random(SEED).shuffle(organic_files)
     if max_organic:
         organic_files = organic_files[:max_organic]
@@ -197,10 +198,10 @@ def collect_images(
         grouped["organic"].append(path)
         kept_organic += 1
     per_source["Organic/biological"] = {
-        "found": len(_image_files(organic_dir)),
+        "found": total_organic,
         "kept": kept_organic,
     }
-    print(f"  Organic (biological) found {len(_image_files(organic_dir)):4d}  usable {kept_organic:4d}")
+    print(f"  Organic (biological) found {total_organic:4d}  usable {kept_organic:4d}")
 
     stats = {
         "bad_files_removed": len(bad_files),
@@ -216,7 +217,6 @@ def collect_images(
 
 def split_and_copy(grouped: dict[str, list[Path]], output_dir: Path) -> dict:
     """Create a stratified 70/15/15 split and copy files with random names."""
-    rng = random.Random(SEED)
     if not all(grouped[name] for name in TARGET_CLASSES):
         missing = [name for name in TARGET_CLASSES if not grouped[name]]
         raise SystemExit(f"Cannot continue: no usable images for {missing}.")

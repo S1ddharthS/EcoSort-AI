@@ -60,6 +60,10 @@ def inspect_image_bytes(
         with Image.open(io.BytesIO(data)) as image:
             fmt = (image.format or "").upper()
             width, height = image.size
+    except Image.DecompressionBombError:
+        raise ImageValidationError(
+            "That image has too many pixels. Please use a smaller image."
+        ) from None
     except (UnidentifiedImageError, OSError, ValueError):
         raise ImageValidationError(
             "That file isn't a supported image. Please upload a JPG, PNG or WEBP."
