@@ -13,6 +13,12 @@ database/*.db
 database/*.db-wal
 database/*.db-shm
 tests/*.db
+tests/*.db-wal
+tests/*.db-shm
+.coverage
+htmlcov/
+playwright-report/
+test-results/
 logs/
 static/uploads/*
 !static/uploads/.gitkeep
