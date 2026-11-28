@@ -4,14 +4,15 @@
   const classifyBtn = document.getElementById("classify-btn");
   if (!classifyBtn) return;
 
-  const esc =
+  const escape =
     (window.EcoSort && window.EcoSort.escapeHtml) ||
     function (value) {
       return String(value == null ? "" : value)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     };
 
   const tabs = [
@@ -68,6 +69,8 @@
     stream: null,
     busy: false,
     hasResult: false,
+    selectionToken: 0,
+    dragDepth: 0,
     modelReady: document.body.dataset.modelReady === "true"
   };
 
@@ -76,10 +79,6 @@
   const loadingButtonMarkup =
     '<span class="btn-spinner" aria-hidden="true"></span><span>Analysing...</span>';
   const maxBytes = 5 * 1024 * 1024;
-
-  function escape(value) {
-    return esc(value);
-  }
 
   function formatBytes(bytes) {
     if (bytes < 1024) return bytes + " B";
@@ -280,9 +279,15 @@
     }
 
     revokeObjectUrl();
+    state.selectionToken += 1;
+    const token = state.selectionToken;
     const url = URL.createObjectURL(file);
     const probe = new Image();
     probe.onload = function () {
+      if (token !== state.selectionToken) {
+        URL.revokeObjectURL(url);
+        return;
+      }
       stopStream();
       state.selectedFile = file;
       state.cameraDataUrl = null;
@@ -298,6 +303,7 @@
     };
     probe.onerror = function () {
       URL.revokeObjectURL(url);
+      if (token !== state.selectionToken) return;
       showUploadError(
         "We couldn't open that image. Please try a different JPG, PNG or WEBP file."
       );
@@ -306,6 +312,8 @@
   }
 
   function setSelectionFromCamera(dataUrl) {
+    state.selectionToken += 1;
+    revokeObjectUrl();
     state.selectedFile = null;
     state.cameraDataUrl = dataUrl;
     resetResult();
@@ -317,6 +325,7 @@
 
   function clearSelection(options) {
     const opts = options || {};
+    state.selectionToken += 1;
     stopStream();
     revokeObjectUrl();
     state.selectedFile = null;
@@ -418,6 +427,8 @@
       return;
     }
     const percent = Math.round(Number(prediction.confidence_percent));
+    const ringColor =
+      Number(prediction.confidence) >= 0.8 ? "var(--success)" : "var(--warning)";
     const tone =
       rec.recyclable === "Yes"
         ? "positive"
@@ -478,7 +489,9 @@
       percent +
       ' percent confidence" style="--pct: ' +
       percent +
-      '%;--ring-color: var(--success)"><span>' +
+      "%;--ring-color: " +
+      ringColor +
+      '"><span>' +
       percent +
       "%</span></div><div><p class=\"confidence-label\">" +
       escape(prediction.confidence_label) +
@@ -544,7 +557,13 @@
       icon("scan") +
       ' Classify another item</button><a class="btn btn-ghost" href="/history">' +
       icon("history") +
-      " View history</a></div>" +
+      ' View history</a><a class="btn btn-ghost" href="/learn#category-' +
+      escape(prediction.category) +
+      '">' +
+      icon("book") +
+      " Read " +
+      escape(prediction.display_name.toLowerCase()) +
+      " guide</a></div>" +
       "</article>";
 
     bindResultActions();
@@ -911,19 +930,26 @@
     if (file) setSelectionFromFile(file);
     fileInput.value = "";
   });
-  ["dragenter", "dragover"].forEach(function (eventName) {
-    dropzone.addEventListener(eventName, function (event) {
-      event.preventDefault();
-      if (!state.busy) dropzone.classList.add("is-dragging");
-    });
+  dropzone.addEventListener("dragenter", function (event) {
+    event.preventDefault();
+    state.dragDepth += 1;
+    if (!state.busy) dropzone.classList.add("is-dragging");
   });
-  ["dragleave", "dragend"].forEach(function (eventName) {
-    dropzone.addEventListener(eventName, function () {
-      dropzone.classList.remove("is-dragging");
-    });
+  dropzone.addEventListener("dragover", function (event) {
+    event.preventDefault();
+    if (!state.busy) dropzone.classList.add("is-dragging");
+  });
+  dropzone.addEventListener("dragleave", function () {
+    state.dragDepth = Math.max(0, state.dragDepth - 1);
+    if (state.dragDepth === 0) dropzone.classList.remove("is-dragging");
+  });
+  dropzone.addEventListener("dragend", function () {
+    state.dragDepth = 0;
+    dropzone.classList.remove("is-dragging");
   });
   dropzone.addEventListener("drop", function (event) {
     event.preventDefault();
+    state.dragDepth = 0;
     dropzone.classList.remove("is-dragging");
     if (state.busy) return;
     const file =
